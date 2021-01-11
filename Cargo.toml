@@ -1,0 +1,19 @@
+[package]
+name = "corsairmi-mqtt"
+version = "0.1.0"
+authors = ["Alex M. <alexmgit@protonmail.com>"]
+edition = "2018"
+
+[dependencies]
+static_assertions = "1"
+futures = "0.3"
+log = "0.4"
+simplelog = "0.9"
+
+[dependencies.corsairmi]
+version = "0.3"
+features = ["tokio"]
+
+[dependencies.tokio]
+version = "1"
+features = ["full"]
