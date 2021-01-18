@@ -6,14 +6,6 @@ edition = "2018"
 
 [dependencies]
 static_assertions = "1"
-futures = "0.3"
 log = "0.4"
 simplelog = "0.9"
-
-[dependencies.corsairmi]
-version = "0.3"
-features = ["tokio"]
-
-[dependencies.tokio]
-version = "1"
-features = ["full"]
+corsairmi = "0.3"

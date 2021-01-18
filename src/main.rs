@@ -1,17 +1,16 @@
 use std::{
     convert::TryFrom,
     fs::OpenOptions,
-    io::{self, ErrorKind},
-    net::Ipv4Addr,
+    io::{self, ErrorKind, Read, Write},
+    net::{Ipv4Addr, TcpStream},
     path::Path,
     time::Duration,
 };
 
-use corsairmi::{AsyncPowerSupply, OpenError};
-use futures::try_join;
+use corsairmi::{OpenError, PowerSupply};
 use simplelog::{Config, WriteLogger};
 use static_assertions::const_assert;
-use tokio::{io::AsyncWriteExt, net::TcpStream, time::sleep};
+use std::thread::sleep;
 
 /// MQTT control packet types.
 ///
@@ -175,18 +174,18 @@ const CONNECT_PACKET: [u8; CONNECT_PACKET_LEN as usize] = [
     CLIENT_ID.as_bytes()[7],
 ];
 
-async fn mqtt_connect() -> Result<TcpStream, OpenError> {
+fn mqtt_connect() -> Result<TcpStream, OpenError> {
     log::debug!("Opening stream");
-    let mut stream = TcpStream::connect(SERVER_ADDR).await?;
+    let mut stream = TcpStream::connect(SERVER_ADDR)?;
 
     log::debug!("Writing connect");
-    stream.write_all(&CONNECT_PACKET).await?;
+    stream.write_all(&CONNECT_PACKET)?;
 
     log::debug!("Waiting for CONNACK");
-    stream.readable().await?;
     let mut connack = vec![0; 64];
     log::debug!("Reading CONNACK");
-    stream.try_read(&mut connack)?;
+    let bytes = stream.read(&mut connack)?;
+    assert!(bytes < connack.len());
 
     if connack[0] >> 4 != (ControlPacket::CONNACK as u8) {
         log::error!("Response is not CONNACK: {}", connack[0]);
@@ -207,16 +206,16 @@ async fn mqtt_connect() -> Result<TcpStream, OpenError> {
     }
 }
 
-async fn psu_connect() -> Result<AsyncPowerSupply, OpenError> {
+fn psu_connect() -> Result<PowerSupply, OpenError> {
     let mut list = corsairmi::list()?;
     if let Some(path) = list.pop() {
-        Ok(AsyncPowerSupply::open(path).await?)
+        Ok(PowerSupply::open(path)?)
     } else {
         Err(io::Error::new(ErrorKind::Other, "No PSU found").into())
     }
 }
 
-async fn mqtt_publish(stream: &mut TcpStream, topic: &str, payload: &str) -> io::Result<()> {
+fn mqtt_publish(stream: &mut TcpStream, topic: &str, payload: &str) -> io::Result<()> {
     const PROPERTY_LEN: usize = 2;
     let packet_len: usize = topic.len() + payload.len() + PROPERTY_LEN + 1 + 2;
     debug_assert!(packet_len < usize::from(u8::MAX));
@@ -230,37 +229,53 @@ async fn mqtt_publish(stream: &mut TcpStream, topic: &str, payload: &str) -> io:
     buf.push(0x01); // payload format: utf-8
     buf.extend_from_slice(payload.as_bytes());
 
-    stream.writable().await?;
     log::trace!("PUBLISH: {} {}", topic, payload);
-    stream.write_all(&buf).await?;
+    stream.write_all(&buf)?;
     Ok(())
 }
 
-async fn connect_loop() -> (AsyncPowerSupply, TcpStream) {
+fn connect_loop() -> (PowerSupply, TcpStream) {
     const MAX_SLEEP: Duration = Duration::from_secs(3600);
     let mut sleep_time = Duration::from_secs(5);
     loop {
-        match try_join!(psu_connect(), mqtt_connect()) {
+        let psu = match psu_connect() {
             Err(e) => {
                 log::error!("Failed to connect to all IO: {}", e);
                 if sleep_time < MAX_SLEEP {
                     sleep_time *= 2;
                 }
                 log::info!("Sleeping for {:?} before retrying", sleep_time);
-                sleep(sleep_time).await;
+                sleep(sleep_time);
+                continue;
             }
-            Ok((psu, mqtt)) => return (psu, mqtt),
-        }
+            Ok(psu) => psu,
+        };
+
+        sleep_time = Duration::from_secs(5);
+        let mqtt = match mqtt_connect() {
+            Err(e) => {
+                log::error!("Failed to connect to all IO: {}", e);
+                if sleep_time < MAX_SLEEP {
+                    sleep_time *= 2;
+                }
+                log::info!("Sleeping for {:?} before retrying", sleep_time);
+                sleep(sleep_time);
+                continue;
+            }
+            Ok(mqtt) => mqtt,
+        };
+
+        break (psu, mqtt);
     }
 }
 
-async fn sample_loop(psu: &mut AsyncPowerSupply, mqtt: &mut TcpStream) {
+fn sample_loop(psu: &mut PowerSupply, mqtt: &mut TcpStream) {
     const SAMPLE_RATE: Duration = Duration::from_secs(10);
     loop {
-        match psu.input_power().await {
+        match psu.input_power() {
             Ok(power) => {
                 if let Err(e) =
-                    mqtt_publish(mqtt, "/home/5950x/psu/in_power", &format!("{:.0}", power)).await
+                    mqtt_publish(mqtt, "/home/5950x/psu/in_power", &format!("{:.0}", power))
                 {
                     log::error!("Failed to publish: {}", e);
                     return;
@@ -271,12 +286,11 @@ async fn sample_loop(psu: &mut AsyncPowerSupply, mqtt: &mut TcpStream) {
                 return;
             }
         }
-        sleep(SAMPLE_RATE).await;
+        sleep(SAMPLE_RATE);
     }
 }
 
-#[tokio::main]
-async fn main() {
+fn main() {
     let log_dir = Path::new("/var/log/corsairmi/");
     if log_dir.is_dir() {
         std::fs::remove_dir_all(log_dir).expect("Failed to remove logging directory");
@@ -296,9 +310,9 @@ async fn main() {
 
     loop {
         log::info!("Connect loop");
-        let (mut psu, mut mqtt) = connect_loop().await;
+        let (mut psu, mut mqtt) = connect_loop();
         log::info!("Sample loop");
-        sample_loop(&mut psu, &mut mqtt).await;
+        sample_loop(&mut psu, &mut mqtt);
         drop(psu);
         drop(mqtt);
     }
