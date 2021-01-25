@@ -204,6 +204,7 @@ fn mqtt_connect() -> Result<TcpStream, OpenError> {
         log::error!("Server did not accept connection: {:?}", rc);
         Err(io::Error::new(ErrorKind::Other, "Server did not accept connection").into())
     } else {
+        log::info!("Sucessfully connected to MQTT server");
         Ok(stream)
     }
 }
@@ -272,7 +273,7 @@ fn connect_loop() -> (PowerSupply, TcpStream) {
 }
 
 fn sample_retry_loop(psu: &mut PowerSupply) -> io::Result<f32> {
-    const MAX_ATTEMPTS: usize = 0;
+    const MAX_ATTEMPTS: usize = 5;
     let mut attempt: usize = 0;
     loop {
         attempt += 1;

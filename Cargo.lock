@@ -39,9 +39,9 @@ dependencies = [
 
 [[package]]
 name = "corsairmi"
-version = "0.3.1"
+version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1d74bc3974d62adea829f5a2fe82a29b916fcd81ddfba311ab6a3685f44360d0"
+checksum = "0ad1b9ab28d4dda7f55440a92b578e2f76750d63e772cbcc5c600cb81e823e44"
 dependencies = [
  "libc",
 ]
