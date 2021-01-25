@@ -130,6 +130,8 @@ impl TryFrom<u8> for ConnectReasonCode {
     }
 }
 
+const TOPIC: &str = "/home/5950x/psu/in_power";
+
 const SERVER_IP: Ipv4Addr = Ipv4Addr::new(10, 0, 0, 4);
 const SERVER_PORT: u16 = 1883;
 const SERVER_ADDR: (Ipv4Addr, u16) = (SERVER_IP, SERVER_PORT);
@@ -298,9 +300,7 @@ fn sample_loop(psu: &mut PowerSupply, mqtt: &mut TcpStream) {
     loop {
         match sample_retry_loop(psu) {
             Ok(power) => {
-                if let Err(e) =
-                    mqtt_publish(mqtt, "/home/5950x/psu/in_power", &format!("{:.0}", power))
-                {
+                if let Err(e) = mqtt_publish(mqtt, TOPIC, &format!("{:.0}", power)) {
                     log::error!("Failed to publish: {}", e);
                     return;
                 }
@@ -332,13 +332,22 @@ fn main() {
 
     log::warn!("Hello world");
 
+    ctrlc::set_handler(move || {
+        let mut mqtt = mqtt_connect().unwrap();
+        mqtt_publish(&mut mqtt, TOPIC, "0.0").unwrap();
+    })
+    .expect("failed to set SIGINT handler");
+
+    let mut sleep_time: Duration = Duration::from_millis(250);
     loop {
         log::info!("Connect loop");
         let (mut psu, mut mqtt) = connect_loop();
-        sleep(Duration::from_secs(5));
+        log::info!("Sleeping for {:?}", sleep_time);
+        sleep(sleep_time);
         log::info!("Sample loop");
         sample_loop(&mut psu, &mut mqtt);
         drop(psu);
         drop(mqtt);
+        sleep_time *= 2;
     }
 }
