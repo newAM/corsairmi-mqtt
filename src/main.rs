@@ -269,10 +269,34 @@ fn connect_loop() -> (PowerSupply, TcpStream) {
     }
 }
 
+fn sample_retry_loop(psu: &mut PowerSupply) -> io::Result<f32> {
+    const MAX_ATTEMPTS: usize = 0;
+    let mut attempt: usize = 0;
+    loop {
+        attempt += 1;
+        match psu.input_power() {
+            Ok(power) => {
+                return Ok(power);
+            }
+            Err(e) => {
+                if attempt > MAX_ATTEMPTS {
+                    return Err(e);
+                }
+                log::warn!(
+                    "Failed to sample PSU attempt {}/{}: {:?}",
+                    attempt,
+                    MAX_ATTEMPTS,
+                    e
+                );
+            }
+        }
+    }
+}
+
 fn sample_loop(psu: &mut PowerSupply, mqtt: &mut TcpStream) {
     const SAMPLE_RATE: Duration = Duration::from_secs(10);
     loop {
-        match psu.input_power() {
+        match sample_retry_loop(psu) {
             Ok(power) => {
                 if let Err(e) =
                     mqtt_publish(mqtt, "/home/5950x/psu/in_power", &format!("{:.0}", power))
@@ -311,6 +335,7 @@ fn main() {
     loop {
         log::info!("Connect loop");
         let (mut psu, mut mqtt) = connect_loop();
+        sleep(Duration::from_secs(5));
         log::info!("Sample loop");
         sample_loop(&mut psu, &mut mqtt);
         drop(psu);
