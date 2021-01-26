@@ -285,8 +285,12 @@ fn sample_retry_loop(psu: &mut PowerSupply) -> io::Result<f32> {
                 if attempt > MAX_ATTEMPTS {
                     return Err(e);
                 }
+                // this seems to un-stick the PSU
+                psu.pc_uptime().ok();
+                psu.uptime().ok();
+                psu.name().ok();
                 log::warn!(
-                    "Failed to sample PSU attempt {}/{}: {:?}",
+                    "Failed to sample PSU attempt {}/{}: {}",
                     attempt,
                     MAX_ATTEMPTS,
                     e
