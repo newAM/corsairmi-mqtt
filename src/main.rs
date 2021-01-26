@@ -336,6 +336,7 @@ fn main() {
     ctrlc::set_handler(move || {
         let mut mqtt = mqtt_connect().unwrap();
         mqtt_publish(&mut mqtt, TOPIC, "0.0").unwrap();
+        std::process::exit(0);
     })
     .expect("failed to set SIGINT handler");
 
