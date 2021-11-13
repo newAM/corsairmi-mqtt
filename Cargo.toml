@@ -1,12 +1,13 @@
 [package]
 name = "corsairmi-mqtt"
 version = "0.1.0"
-authors = ["Alex M. <alexmgit@protonmail.com>"]
+authors = ["Alex Martens <alexmgit@protonmail.com>"]
 edition = "2018"
+license = "MIT"
 
 [dependencies]
 static_assertions = "1"
 log = "0.4"
-simplelog = "0.10"
-corsairmi = "0.3"
+simplelog = "0.11"
+corsairmi = "0.4"
 ctrlc = "3"
