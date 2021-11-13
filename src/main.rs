@@ -2,7 +2,7 @@ use std::{
     convert::TryFrom,
     fs::OpenOptions,
     io::{self, ErrorKind, Read, Write},
-    net::{Ipv4Addr, TcpStream},
+    net::{Ipv4Addr, SocketAddr, TcpStream},
     path::Path,
     time::Duration,
 };
@@ -134,7 +134,6 @@ const TOPIC: &str = "/home/5950x/psu/in_power";
 
 const SERVER_IP: Ipv4Addr = Ipv4Addr::new(10, 0, 0, 4);
 const SERVER_PORT: u16 = 1883;
-const SERVER_ADDR: (Ipv4Addr, u16) = (SERVER_IP, SERVER_PORT);
 
 const PROTOCOL_NAME_LEN: u16 = 4;
 const PROTOCOL_NAME: [u8; PROTOCOL_NAME_LEN as usize] = [b'M', b'Q', b'T', b'T'];
@@ -178,7 +177,10 @@ const CONNECT_PACKET: [u8; CONNECT_PACKET_LEN as usize] = [
 
 fn mqtt_connect() -> Result<TcpStream, OpenError> {
     log::debug!("Opening stream");
-    let mut stream = TcpStream::connect(SERVER_ADDR)?;
+    let mut stream = TcpStream::connect_timeout(
+        &SocketAddr::new(SERVER_IP.into(), SERVER_PORT),
+        Duration::from_secs(2),
+    )?;
 
     log::debug!("Writing connect");
     stream.write_all(&CONNECT_PACKET)?;
