@@ -2,12 +2,13 @@
 name = "corsairmi-mqtt"
 version = "0.1.0"
 authors = ["Alex Martens <alexmgit@protonmail.com>"]
-edition = "2018"
+edition = "2021"
 license = "MIT"
 
 [dependencies]
-static_assertions = "1"
-log = "0.4"
-simplelog = "0.11"
-corsairmi = "0.4"
+anyhow = "1"
+corsairmi = "1"
 ctrlc = "3"
+log = "0.4"
+static_assertions = "1"
+systemd-journal-logger = "0.4"

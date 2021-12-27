@@ -1,21 +1,18 @@
+use anyhow::Context;
+use corsairmi::PowerSupply;
+use static_assertions::const_assert;
 use std::{
-    convert::TryFrom,
-    fs::OpenOptions,
-    io::{self, ErrorKind, Read, Write},
+    io::{self, Read, Write},
     net::{Ipv4Addr, SocketAddr, TcpStream},
-    path::Path,
+    thread::sleep,
     time::Duration,
 };
-
-use corsairmi::{OpenError, PowerSupply};
-use simplelog::{Config, WriteLogger};
-use static_assertions::const_assert;
-use std::thread::sleep;
 
 /// MQTT control packet types.
 ///
 /// See [MQTT Control Packet format](https://docs.oasis-open.org/mqtt/mqtt/v5.0/os/mqtt-v5.0-os.html#_Toc3901019).
 #[repr(u8)]
+#[allow(clippy::upper_case_acronyms)]
 enum ControlPacket {
     /// Connection request.
     CONNECT = 1,
@@ -175,7 +172,7 @@ const CONNECT_PACKET: [u8; CONNECT_PACKET_LEN as usize] = [
     CLIENT_ID.as_bytes()[7],
 ];
 
-fn mqtt_connect() -> Result<TcpStream, OpenError> {
+fn mqtt_connect() -> anyhow::Result<TcpStream> {
     log::debug!("Opening stream");
     let mut stream = TcpStream::connect_timeout(
         &SocketAddr::new(SERVER_IP.into(), SERVER_PORT),
@@ -186,38 +183,46 @@ fn mqtt_connect() -> Result<TcpStream, OpenError> {
     stream.write_all(&CONNECT_PACKET)?;
 
     log::debug!("Waiting for CONNACK");
-    let mut connack = vec![0; 64];
+    let mut connack: Vec<u8> = vec![0; 64];
     log::debug!("Reading CONNACK");
-    let bytes = stream.read(&mut connack)?;
-    assert!(bytes < connack.len());
+    let len: usize = stream.read(&mut connack)?;
+    log::debug!("Read CONNACK len={}", len);
 
-    if connack[0] >> 4 != (ControlPacket::CONNACK as u8) {
-        log::error!("Response is not CONNACK: {}", connack[0]);
-        return Err(io::Error::new(ErrorKind::Other, "Response is not CONNACK").into());
+    let byte0: &u8 = connack
+        .get(0)
+        .with_context(|| "failed to get CONNACK byte 0")?;
+    if byte0 >> 4 != (ControlPacket::CONNACK as u8) {
+        return Err(anyhow::anyhow!("Response is not CONNACK: {}", byte0));
     }
 
-    if connack[1] < 4 {
-        log::error!("CONNACK is a little short: {}", connack[1]);
-        return Err(io::Error::new(ErrorKind::Other, "CONNACK len is funky").into());
+    const MIN_CONNACK_LEN: u8 = 4;
+    let byte1: &u8 = connack
+        .get(1)
+        .with_context(|| "failed to get CONNACK byte 1")?;
+    if byte1 < &MIN_CONNACK_LEN {
+        return Err(anyhow::anyhow!(
+            "CONNACK minimum length is {} got {}",
+            MIN_CONNACK_LEN,
+            byte1
+        ));
     }
 
-    let rc = ConnectReasonCode::try_from(connack[3]);
-    if rc != Ok(ConnectReasonCode::Success) {
-        log::error!("Server did not accept connection: {:?}", rc);
-        Err(io::Error::new(ErrorKind::Other, "Server did not accept connection").into())
-    } else {
-        log::info!("Sucessfully connected to MQTT server");
-        Ok(stream)
+    let byte3: &u8 = connack
+        .get(3)
+        .with_context(|| "failed to get CONNACK byte 3")?;
+    match ConnectReasonCode::try_from(*byte3) {
+        Ok(ConnectReasonCode::Success) => {
+            log::info!("Sucessfully connected to MQTT server");
+            Ok(stream)
+        }
+        x => Err(anyhow::anyhow!("Server did not accept connection: {:?}", x)),
     }
 }
 
-fn psu_connect() -> Result<PowerSupply, OpenError> {
-    let mut list = corsairmi::list()?;
-    if let Some(path) = list.pop() {
-        Ok(PowerSupply::open(path)?)
-    } else {
-        Err(io::Error::new(ErrorKind::Other, "No PSU found").into())
-    }
+fn psu_connect() -> anyhow::Result<PowerSupply> {
+    Ok(PowerSupply::open(
+        corsairmi::list()?.first().with_context(|| "No PSU found")?,
+    )?)
 }
 
 fn mqtt_publish(stream: &mut TcpStream, topic: &str, payload: &str) -> io::Result<()> {
@@ -241,9 +246,9 @@ fn mqtt_publish(stream: &mut TcpStream, topic: &str, payload: &str) -> io::Resul
 
 fn connect_loop() -> (PowerSupply, TcpStream) {
     const MAX_SLEEP: Duration = Duration::from_secs(3600);
-    let mut sleep_time = Duration::from_secs(5);
+    let mut sleep_time: Duration = Duration::from_secs(5);
     loop {
-        let psu = match psu_connect() {
+        let psu: PowerSupply = match psu_connect() {
             Err(e) => {
                 log::error!("Failed to connect to all IO: {}", e);
                 if sleep_time < MAX_SLEEP {
@@ -257,7 +262,7 @@ fn connect_loop() -> (PowerSupply, TcpStream) {
         };
 
         sleep_time = Duration::from_secs(5);
-        let mqtt = match mqtt_connect() {
+        let mqtt: TcpStream = match mqtt_connect() {
             Err(e) => {
                 log::error!("Failed to connect to all IO: {}", e);
                 if sleep_time < MAX_SLEEP {
@@ -321,21 +326,9 @@ fn sample_loop(psu: &mut PowerSupply, mqtt: &mut TcpStream) {
     }
 }
 
-fn main() {
-    let log_dir = Path::new("/var/log/corsairmi/");
-    if log_dir.is_dir() {
-        std::fs::remove_dir_all(log_dir).expect("Failed to remove logging directory");
-    }
-    std::fs::create_dir(log_dir).expect("Failed to create logging directory");
-
-    let log = OpenOptions::new()
-        .write(true)
-        .create(true)
-        .open("/var/log/corsairmi/out.log")
-        .expect("Failed to open out.log");
-
-    WriteLogger::init(log::LevelFilter::Debug, Config::default(), log)
-        .expect("Failed to init logger");
+fn main() -> anyhow::Result<()> {
+    systemd_journal_logger::init().with_context(|| "failed to initialize logging")?;
+    log::set_max_level(log::LevelFilter::Trace);
 
     log::warn!("Hello world");
 
@@ -344,8 +337,9 @@ fn main() {
         mqtt_publish(&mut mqtt, TOPIC, "0.0").unwrap();
         std::process::exit(0);
     })
-    .expect("failed to set SIGINT handler");
+    .with_context(|| "failed to set SIGINT handler")?;
 
+    const MAX_SLEEP: Duration = Duration::from_secs(3600);
     let mut sleep_time: Duration = Duration::from_millis(250);
     loop {
         log::info!("Connect loop");
@@ -356,6 +350,8 @@ fn main() {
         sample_loop(&mut psu, &mut mqtt);
         drop(psu);
         drop(mqtt);
-        sleep_time *= 2;
+        if sleep_time < MAX_SLEEP {
+            sleep_time *= 2;
+        }
     }
 }
