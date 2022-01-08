@@ -308,21 +308,31 @@ fn sample_retry_loop(psu: &mut PowerSupply) -> io::Result<f32> {
 }
 
 fn sample_loop(psu: &mut PowerSupply, mqtt: &mut TcpStream) {
-    const SAMPLE_RATE: Duration = Duration::from_secs(10);
+    const SAMPLE_RATE: Duration = Duration::from_secs(1);
+    const SAMPLES_PER_PUBLISH: usize = 15;
+
     loop {
-        match sample_retry_loop(psu) {
-            Ok(power) => {
-                if let Err(e) = mqtt_publish(mqtt, TOPIC, &format!("{:.0}", power)) {
-                    log::error!("Failed to publish: {}", e);
+        let mut samples: Vec<f32> = Vec::with_capacity(SAMPLES_PER_PUBLISH);
+        for _ in 0..SAMPLES_PER_PUBLISH {
+            let sample: f32 = match sample_retry_loop(psu) {
+                Ok(power) => power,
+                Err(e) => {
+                    log::error!("Failed to sample PSU: {}", e);
                     return;
                 }
-            }
-            Err(e) => {
-                log::error!("Failed to sample PSU: {}", e);
-                return;
-            }
+            };
+
+            samples.push(sample);
+            sleep(SAMPLE_RATE);
         }
-        sleep(SAMPLE_RATE);
+
+        let sum: f32 = samples.iter().sum::<f32>();
+        let mean: f32 = sum / (SAMPLES_PER_PUBLISH as f32);
+
+        if let Err(e) = mqtt_publish(mqtt, TOPIC, &format!("{:.0}", mean)) {
+            log::error!("Failed to publish: {}", e);
+            return;
+        }
     }
 }
 
