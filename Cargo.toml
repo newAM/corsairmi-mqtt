@@ -9,6 +9,6 @@ license = "MIT"
 anyhow = "1"
 corsairmi = "1"
 ctrlc = "3"
-log = "0.4"
+log = { version = "0.4", features = ["release_max_level_info"] }
 static_assertions = "1"
 systemd-journal-logger = "0.4"
