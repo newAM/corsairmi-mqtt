@@ -186,42 +186,34 @@ fn mqtt_connect() -> anyhow::Result<TcpStream> {
     let mut connack: Vec<u8> = vec![0; 64];
     log::debug!("Reading CONNACK");
     let len: usize = stream.read(&mut connack)?;
-    log::debug!("Read CONNACK len={}", len);
+    log::debug!("Read CONNACK len={len}");
 
-    let byte0: &u8 = connack
-        .get(0)
-        .with_context(|| "failed to get CONNACK byte 0")?;
+    let byte0: &u8 = connack.get(0).context("failed to get CONNACK byte 0")?;
     if byte0 >> 4 != (ControlPacket::CONNACK as u8) {
-        return Err(anyhow::anyhow!("Response is not CONNACK: {}", byte0));
+        return Err(anyhow::anyhow!("Response is not CONNACK: {byte0}"));
     }
 
     const MIN_CONNACK_LEN: u8 = 4;
-    let byte1: &u8 = connack
-        .get(1)
-        .with_context(|| "failed to get CONNACK byte 1")?;
+    let byte1: &u8 = connack.get(1).context("failed to get CONNACK byte 1")?;
     if byte1 < &MIN_CONNACK_LEN {
         return Err(anyhow::anyhow!(
-            "CONNACK minimum length is {} got {}",
-            MIN_CONNACK_LEN,
-            byte1
+            "CONNACK minimum length is {MIN_CONNACK_LEN} got {byte1}"
         ));
     }
 
-    let byte3: &u8 = connack
-        .get(3)
-        .with_context(|| "failed to get CONNACK byte 3")?;
+    let byte3: &u8 = connack.get(3).context("failed to get CONNACK byte 3")?;
     match ConnectReasonCode::try_from(*byte3) {
         Ok(ConnectReasonCode::Success) => {
             log::info!("Sucessfully connected to MQTT server");
             Ok(stream)
         }
-        x => Err(anyhow::anyhow!("Server did not accept connection: {:?}", x)),
+        x => Err(anyhow::anyhow!("Server did not accept connection: {x:?}")),
     }
 }
 
 fn psu_connect() -> anyhow::Result<PowerSupply> {
     Ok(PowerSupply::open(
-        corsairmi::list()?.first().with_context(|| "No PSU found")?,
+        corsairmi::list()?.first().context("No PSU found")?,
     )?)
 }
 
@@ -239,7 +231,7 @@ fn mqtt_publish(stream: &mut TcpStream, topic: &str, payload: &str) -> io::Resul
     buf.push(0x01); // payload format: utf-8
     buf.extend_from_slice(payload.as_bytes());
 
-    log::trace!("PUBLISH: {} {}", topic, payload);
+    log::trace!("PUBLISH: {topic} {payload}");
     stream.write_all(&buf)?;
     Ok(())
 }
@@ -250,11 +242,11 @@ fn connect_loop() -> (PowerSupply, TcpStream) {
     loop {
         let psu: PowerSupply = match psu_connect() {
             Err(e) => {
-                log::error!("Failed to connect to all IO: {}", e);
+                log::error!("Failed to connect to all IO: {e}");
                 if sleep_time < MAX_SLEEP {
                     sleep_time *= 2;
                 }
-                log::info!("Sleeping for {:?} before retrying", sleep_time);
+                log::info!("Sleeping for {sleep_time:?} before retrying");
                 sleep(sleep_time);
                 continue;
             }
@@ -264,11 +256,11 @@ fn connect_loop() -> (PowerSupply, TcpStream) {
         sleep_time = Duration::from_secs(5);
         let mqtt: TcpStream = match mqtt_connect() {
             Err(e) => {
-                log::error!("Failed to connect to all IO: {}", e);
+                log::error!("Failed to connect to all IO: {e}");
                 if sleep_time < MAX_SLEEP {
                     sleep_time *= 2;
                 }
-                log::info!("Sleeping for {:?} before retrying", sleep_time);
+                log::info!("Sleeping for {sleep_time:?} before retrying");
                 sleep(sleep_time);
                 continue;
             }
@@ -296,12 +288,7 @@ fn sample_retry_loop(psu: &mut PowerSupply) -> io::Result<f32> {
                 psu.pc_uptime().ok();
                 psu.uptime().ok();
                 psu.name().ok();
-                log::warn!(
-                    "Failed to sample PSU attempt {}/{}: {}",
-                    attempt,
-                    MAX_ATTEMPTS,
-                    e
-                );
+                log::warn!("Failed to sample PSU attempt {attempt}/{MAX_ATTEMPTS}: {e}");
             }
         }
     }
@@ -317,7 +304,7 @@ fn sample_loop(psu: &mut PowerSupply, mqtt: &mut TcpStream) {
             let sample: f32 = match sample_retry_loop(psu) {
                 Ok(power) => power,
                 Err(e) => {
-                    log::error!("Failed to sample PSU: {}", e);
+                    log::error!("Failed to sample PSU: {e}");
                     return;
                 }
             };
@@ -329,32 +316,32 @@ fn sample_loop(psu: &mut PowerSupply, mqtt: &mut TcpStream) {
         let sum: f32 = samples.iter().sum::<f32>();
         let mean: f32 = sum / (SAMPLES_PER_PUBLISH as f32);
 
-        if let Err(e) = mqtt_publish(mqtt, TOPIC, &format!("{:.0}", mean)) {
-            log::error!("Failed to publish: {}", e);
+        if let Err(e) = mqtt_publish(mqtt, TOPIC, &format!("{mean:.0}")) {
+            log::error!("Failed to publish: {e}");
             return;
         }
     }
 }
 
 fn main() -> anyhow::Result<()> {
-    systemd_journal_logger::init().with_context(|| "failed to initialize logging")?;
+    systemd_journal_logger::init().context("failed to initialize logging")?;
     log::set_max_level(log::LevelFilter::Trace);
 
-    log::warn!("Hello world");
+    log::info!("Hello world");
 
     ctrlc::set_handler(move || {
         let mut mqtt = mqtt_connect().unwrap();
         mqtt_publish(&mut mqtt, TOPIC, "0.0").unwrap();
         std::process::exit(0);
     })
-    .with_context(|| "failed to set SIGINT handler")?;
+    .context("failed to set SIGINT handler")?;
 
-    const MAX_SLEEP: Duration = Duration::from_secs(3600);
+    const MAX_SLEEP: Duration = Duration::from_secs(300);
     let mut sleep_time: Duration = Duration::from_millis(250);
     loop {
         log::info!("Connect loop");
         let (mut psu, mut mqtt) = connect_loop();
-        log::info!("Sleeping for {:?}", sleep_time);
+        log::info!("Sleeping for {sleep_time:?}");
         sleep(sleep_time);
         log::info!("Sample loop");
         sample_loop(&mut psu, &mut mqtt);
