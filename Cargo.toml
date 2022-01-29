@@ -11,4 +11,4 @@ corsairmi = "1"
 ctrlc = "3"
 log = { version = "0.4", features = ["release_max_level_info"] }
 static_assertions = "1"
-systemd-journal-logger = "0.4"
+systemd-journal-logger = "0.5"
