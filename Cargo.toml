@@ -1,5 +1,6 @@
 [package]
 name = "corsairmi-mqtt"
+description = "Read power from a corsair power supply and publish to a MQTT server"
 version = "0.1.0"
 authors = ["Alex Martens <alex@thinglab.org>"]
 edition = "2021"
