@@ -242,7 +242,7 @@ fn connect_loop() -> (PowerSupply, TcpStream) {
     loop {
         let psu: PowerSupply = match psu_connect() {
             Err(e) => {
-                log::error!("Failed to connect to all IO: {e}");
+                log::error!("Failed to connect to PSU: {e}");
                 if sleep_time < MAX_SLEEP {
                     sleep_time *= 2;
                 }
@@ -256,7 +256,7 @@ fn connect_loop() -> (PowerSupply, TcpStream) {
         sleep_time = Duration::from_secs(5);
         let mqtt: TcpStream = match mqtt_connect() {
             Err(e) => {
-                log::error!("Failed to connect to all IO: {e}");
+                log::error!("Failed to connect to MQTT server: {e}");
                 if sleep_time < MAX_SLEEP {
                     sleep_time *= 2;
                 }

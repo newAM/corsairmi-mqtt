@@ -12,9 +12,11 @@ in
   };
 
   config = mkIf cfg.enable {
-    services.udev.packages = [ pkg ];
-
     users.groups.corsairmi = { };
+
+    services.udev.extraRules = ''
+      SUBSYSTEM=="hidraw", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="1c06", GROUP="corsairmi", MODE="0660"
+    '';
 
     systemd.services.corsairmi-mqtt = {
       wantedBy = [ "multi-user.target" ];
@@ -30,8 +32,11 @@ in
         DynamicUser = true;
         DevicePolicy = "closed";
         CapabilityBoundingSet = "";
-        RestrictAddressFamilies = [ "AF_INET" "AF_INET6" ];
-        DeviceAllow = [ "/dev/hidraw0 rwm" ];
+        RestrictAddressFamilies = [ "AF_INET" "AF_INET6" "AF_UNIX" ];
+        DeviceAllow = [
+          "char-usb_device rwm"
+          "/dev/hidraw0 rwm"
+        ];
         NoNewPrivileges = true;
         PrivateDevices = true;
         PrivateMounts = true;
@@ -47,6 +52,7 @@ in
         BindPaths = [
           "/dev/bus/usb"
           "/dev/hidraw0"
+          "/sys/class/hidraw"
         ];
         MemoryDenyWriteExecute = true;
         LockPersonality = true;
