@@ -13,6 +13,6 @@
         aarch64-linux = self.packages.aarch64-linux.corsairmi-mqtt;
       };
 
-      nixosModule = import ./module.nix { };
+      nixosModule = import ./module.nix;
     };
 }
