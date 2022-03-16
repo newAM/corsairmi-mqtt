@@ -12,10 +12,10 @@ in
   };
 
   config = mkIf cfg.enable {
-    users.groups.corsairmi = { };
+    users.groups.psu = { };
 
     services.udev.extraRules = ''
-      SUBSYSTEM=="hidraw", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="1c06", GROUP="corsairmi", MODE="0660"
+      SUBSYSTEM=="hidraw", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="1c06", GROUP="psu", MODE="0660"
     '';
 
     systemd.services.corsairmi-mqtt = {
@@ -28,7 +28,7 @@ in
         ExecStart = "${pkg}/bin/corsairmi-mqtt";
 
         # hardening
-        SupplementaryGroups = [ "corsairmi" ];
+        SupplementaryGroups = [ "psu" ];
         DynamicUser = true;
         DevicePolicy = "closed";
         CapabilityBoundingSet = "";
