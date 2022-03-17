@@ -15,13 +15,23 @@ in
     users.groups.psu = { };
 
     services.udev.extraRules = ''
-      SUBSYSTEM=="hidraw", ATTRS{idVendor}=="1b1c", ATTRS{idProduct}=="1c06", GROUP="psu", MODE="0660"
+      SUBSYSTEM=="hidraw", \
+        ATTRS{idVendor}=="1b1c", \
+        ATTRS{idProduct}=="1c06", \
+        TAG+="systemd", \
+        ENV{SYSTEMD_ALIAS}+="/dev/psu", \
+        GROUP="psu", \
+        MODE="0660"
     '';
 
     systemd.services.corsairmi-mqtt = {
       wantedBy = [ "multi-user.target" ];
-      after = [ "network-online.target" ];
-      description = "corsairmi-mqtt";
+      after = [ "network-online.target" "dev-psu.device" ];
+      requires = [ "dev-psu.device" ];
+      description = "Corsair Mi MQTT";
+      unitConfig = {
+        ReloadPropagatedFrom = "dev-psu.device";
+      };
       serviceConfig = {
         Type = "idle";
         KillSignal = "SIGINT";
