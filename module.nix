@@ -29,9 +29,7 @@ in
       after = [ "network-online.target" "dev-psu.device" ];
       requires = [ "dev-psu.device" ];
       description = "Corsair Mi MQTT";
-      unitConfig = {
-        ReloadPropagatedFrom = "dev-psu.device";
-      };
+      unitConfig.ReloadPropagatedFrom = "dev-psu.device";
       serviceConfig = {
         Type = "idle";
         KillSignal = "SIGINT";
@@ -72,13 +70,8 @@ in
         RestrictSUIDSGID = true;
         SystemCallArchitectures = "native";
         SystemCallFilter = [
-          "~@clock"
           "~@debug"
-          "~@module"
           "~@mount"
-          "~@raw-io"
-          "~@reboot"
-          "~@swap"
           "~@privileged"
           "~@resources"
           "~@cpu-emulation"
