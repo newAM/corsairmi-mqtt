@@ -11,6 +11,8 @@ rustPlatform.buildRustPackage {
 
   cargoLock.lockFile = ./Cargo.lock;
 
+  doCheck = false;
+
   meta = with lib; {
     inherit (cargoToml.package) description;
     homepage = cargoToml.package.repository;
