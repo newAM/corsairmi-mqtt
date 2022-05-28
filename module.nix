@@ -44,6 +44,9 @@ in
         DeviceAllow = [
           "char-usb_device rwm"
           "/dev/hidraw0 rwm"
+          "/dev/hidraw1 rwm"
+          "/dev/hidraw2 rwm"
+          "/dev/hidraw3 rwm"
         ];
         NoNewPrivileges = true;
         PrivateDevices = true;
@@ -60,6 +63,9 @@ in
         BindPaths = [
           "/dev/bus/usb"
           "/dev/hidraw0"
+          "/dev/hidraw1"
+          "/dev/hidraw2"
+          "/dev/hidraw3"
           "/sys/class/hidraw"
         ];
         MemoryDenyWriteExecute = true;
