@@ -4,7 +4,6 @@ with lib;
 
 let
   cfg = config.services.corsairmi-mqtt;
-  pkg = pkgs.callPackage ./package.nix { };
 in
 {
   options.services.corsairmi-mqtt = {
@@ -33,7 +32,7 @@ in
       serviceConfig = {
         Type = "idle";
         KillSignal = "SIGINT";
-        ExecStart = "${pkg}/bin/corsairmi-mqtt";
+        ExecStart = "${pkgs.corsairmi-mqtt}/bin/corsairmi-mqtt";
 
         # hardening
         SupplementaryGroups = [ "psu" ];
