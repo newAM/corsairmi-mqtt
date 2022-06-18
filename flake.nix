@@ -22,13 +22,6 @@
 
             commonArgs = {
               src = ./.;
-              nativeBuildInputs = with pkgs; [
-                pkg-config
-              ];
-              buildInputs = with pkgs; [
-                libusb1
-                udev
-              ];
             };
 
             cargoArtifacts = craneLib.buildDepsOnly commonArgs;
