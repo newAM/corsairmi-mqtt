@@ -4,6 +4,7 @@ use static_assertions::const_assert;
 use std::{
     io::{self, Read, Write},
     net::{Ipv4Addr, SocketAddr, TcpStream},
+    path::PathBuf,
     thread::sleep,
     time::Duration,
 };
@@ -212,9 +213,9 @@ fn mqtt_connect() -> anyhow::Result<TcpStream> {
 }
 
 fn psu_connect() -> anyhow::Result<PowerSupply> {
-    Ok(PowerSupply::open(
-        corsairmi::list()?.first().context("No PSU found")?,
-    )?)
+    let list: Vec<PathBuf> = corsairmi::list()?;
+    let first: &PathBuf = list.first().context("No PSU found")?;
+    PowerSupply::open(first).with_context(|| format!("Unable to open {}", first.to_string_lossy()))
 }
 
 fn mqtt_publish(stream: &mut TcpStream, topic: &str, payload: &str) -> io::Result<()> {
@@ -237,8 +238,8 @@ fn mqtt_publish(stream: &mut TcpStream, topic: &str, payload: &str) -> io::Resul
 }
 
 fn connect_loop() -> (PowerSupply, TcpStream) {
-    const MAX_SLEEP: Duration = Duration::from_secs(3600);
-    let mut sleep_time: Duration = Duration::from_secs(5);
+    const MAX_SLEEP: Duration = Duration::from_secs(30);
+    let mut sleep_time: Duration = Duration::from_secs(1);
     loop {
         let psu: PowerSupply = match psu_connect() {
             Err(e) => {
@@ -253,7 +254,7 @@ fn connect_loop() -> (PowerSupply, TcpStream) {
             Ok(psu) => psu,
         };
 
-        sleep_time = Duration::from_secs(5);
+        sleep_time = Duration::from_secs(1);
         let mqtt: TcpStream = match mqtt_connect() {
             Err(e) => {
                 log::error!("Failed to connect to MQTT server: {e}");
