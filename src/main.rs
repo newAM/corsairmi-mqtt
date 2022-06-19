@@ -213,7 +213,7 @@ fn mqtt_connect() -> anyhow::Result<TcpStream> {
 }
 
 fn psu_connect() -> anyhow::Result<PowerSupply> {
-    let list: Vec<PathBuf> = corsairmi::list()?;
+    let list: Vec<PathBuf> = corsairmi::list().context("Failed to list PSUs")?;
     let first: &PathBuf = list.first().context("No PSU found")?;
     PowerSupply::open(first).with_context(|| format!("Unable to open {}", first.to_string_lossy()))
 }
