@@ -22,6 +22,14 @@
 
             commonArgs = {
               src = ./.;
+
+              nativeBuildInputs = with pkgs; [
+                pkg-config
+              ];
+
+              buildInputs = with pkgs; [
+                openssl
+              ];
             };
 
             cargoArtifacts = craneLib.buildDepsOnly commonArgs;
@@ -30,6 +38,11 @@
             packages.default = craneLib.buildPackage (commonArgs // {
               inherit cargoArtifacts;
             });
+
+            devShells.default = pkgs.mkShellNoCC {
+              nativeBuildInputs = [ pkgs.pkg-config ];
+              buildInputs = [ pkgs.openssl ];
+            };
 
             checks = {
               pkg = packages.default;
