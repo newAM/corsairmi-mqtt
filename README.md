@@ -4,7 +4,7 @@
 
 This is a simple daemon to read power measurements from my power supply, and publish them to a MQTT server.
 
-This code is for reference only, this is tailored for my specific setup, consisting of:
+This code is for reference only, it will not be suitable for most people because it is tailored for my specific setup, consisting of:
 
 * A [NixOS] client.
 * A MQTT server with TLS-PSK.
