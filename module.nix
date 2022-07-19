@@ -67,7 +67,7 @@ in
       {
         wantedBy = [ "multi-user.target" ];
         after = [ "network-online.target" "dev-psu.device" ];
-        requires = [ "dev-psu.device" ];
+        bindsTo = [ "dev-psu.device" ];
         description = "Corsair Mi MQTT";
         unitConfig.ReloadPropagatedFrom = "dev-psu.device";
         serviceConfig = {
