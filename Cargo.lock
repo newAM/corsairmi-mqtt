@@ -259,7 +259,7 @@ checksum = "18a6dbe30758c9f83eb00cbea4ac95966305f5a7772f3f42ebfc7fc7eddbd8e1"
 [[package]]
 name = "openssl"
 version = "0.10.41"
-source = "git+https://github.com/sfackler/rust-openssl#c57a993454b76cf08e40d1f5796f60646e619df7"
+source = "git+https://github.com/sfackler/rust-openssl#ff5397d4771b10a0c173152f777e2d50f26a73ee"
 dependencies = [
  "bitflags",
  "cfg-if",
@@ -273,7 +273,7 @@ dependencies = [
 [[package]]
 name = "openssl-macros"
 version = "0.1.0"
-source = "git+https://github.com/sfackler/rust-openssl#c57a993454b76cf08e40d1f5796f60646e619df7"
+source = "git+https://github.com/sfackler/rust-openssl#ff5397d4771b10a0c173152f777e2d50f26a73ee"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -283,7 +283,7 @@ dependencies = [
 [[package]]
 name = "openssl-sys"
 version = "0.9.75"
-source = "git+https://github.com/sfackler/rust-openssl#c57a993454b76cf08e40d1f5796f60646e619df7"
+source = "git+https://github.com/sfackler/rust-openssl#ff5397d4771b10a0c173152f777e2d50f26a73ee"
 dependencies = [
  "autocfg",
  "cc",
@@ -300,9 +300,9 @@ checksum = "1df8c4ec4b0627e53bdf214615ad287367e482558cf84b109250b37464dc03ae"
 
 [[package]]
 name = "proc-macro2"
-version = "1.0.40"
+version = "1.0.42"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dd96a1e8ed2596c337f8eae5f24924ec83f5ad5ab21ea8e455d3566c69fbcaf7"
+checksum = "c278e965f1d8cf32d6e0e96de3d3e79712178ae67986d9cf9151f51e95aac89b"
 dependencies = [
  "unicode-ident",
 ]
