@@ -259,7 +259,7 @@ checksum = "18a6dbe30758c9f83eb00cbea4ac95966305f5a7772f3f42ebfc7fc7eddbd8e1"
 [[package]]
 name = "openssl"
 version = "0.10.41"
-source = "git+https://github.com/sfackler/rust-openssl#05ea7900e99bf0fdf64e3b9028bb0cca116ca903"
+source = "git+https://github.com/sfackler/rust-openssl#fda8fcd76c5efe3f67950b6744af041ead56046a"
 dependencies = [
  "bitflags",
  "cfg-if",
@@ -273,7 +273,7 @@ dependencies = [
 [[package]]
 name = "openssl-macros"
 version = "0.1.0"
-source = "git+https://github.com/sfackler/rust-openssl#05ea7900e99bf0fdf64e3b9028bb0cca116ca903"
+source = "git+https://github.com/sfackler/rust-openssl#fda8fcd76c5efe3f67950b6744af041ead56046a"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -283,7 +283,7 @@ dependencies = [
 [[package]]
 name = "openssl-sys"
 version = "0.9.75"
-source = "git+https://github.com/sfackler/rust-openssl#05ea7900e99bf0fdf64e3b9028bb0cca116ca903"
+source = "git+https://github.com/sfackler/rust-openssl#fda8fcd76c5efe3f67950b6744af041ead56046a"
 dependencies = [
  "autocfg",
  "cc",
