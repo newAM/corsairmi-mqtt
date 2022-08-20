@@ -53,6 +53,7 @@ in
         ATTRS{idProduct}=="1c06", \
         TAG+="systemd", \
         ENV{SYSTEMD_ALIAS}+="/dev/psu", \
+        ENV{SYSTEMD_WANTS}+="corsairmi-mqtt.service", \
         GROUP="psu", \
         MODE="0660"
     '';
