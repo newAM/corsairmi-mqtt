@@ -37,6 +37,8 @@ fn mqtt_connect(
     let mut ssl_context_builder: SslContextBuilder =
         SslContext::builder(SslMethod::tls_client()).context("Failed to create SSL builder")?;
 
+    let any_psk_id: String = psks.iter().next().expect("psks is empty").0.to_string();
+
     // workaround for an OpenSSL bug
     // https://github.com/openssl/openssl/issues/8534
     ssl_context_builder
@@ -95,14 +97,12 @@ fn mqtt_connect(
     ssl_stream.connect().context("SSL handshake failed")?;
     log::info!("TLS connection established");
 
-    let client_id: &str = str::from_utf8(
-        ssl_stream
-            .ssl()
-            .psk_identity()
-            .expect("PSK identity is not set"),
-    )
-    .expect("PSK identity is not UTF-8");
-    let connect: Vec<u8> = mqtt::connect(client_id);
+    let client_id: String = ssl_stream
+        .ssl()
+        .psk_identity()
+        .and_then(|bytes| String::from_utf8(bytes.to_vec()).ok())
+        .unwrap_or(any_psk_id);
+    let connect: Vec<u8> = mqtt::connect(&client_id);
 
     log::info!("Writing CONNECT");
     ssl_stream
