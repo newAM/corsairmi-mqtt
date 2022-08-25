@@ -67,9 +67,9 @@ dependencies = [
 
 [[package]]
 name = "cpufeatures"
-version = "0.2.3"
+version = "0.2.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1079fb8528d9f9c888b1e8aa651e6e079ade467323d58f75faf1d30b1808f540"
+checksum = "dc948ebb96241bb40ab73effeb80d9f93afaad49359d159a5e61be51619fe813"
 dependencies = [
  "libc",
 ]
@@ -260,7 +260,7 @@ checksum = "074864da206b4973b84eb91683020dbefd6a8c3f0f38e054d93954e891935e4e"
 [[package]]
 name = "openssl"
 version = "0.10.41"
-source = "git+https://github.com/sfackler/rust-openssl#4d392c96da22825f7e15781968df145d8e5fe681"
+source = "git+https://github.com/sfackler/rust-openssl#0f3179b7724d5b8eb33d7a82079305b4f0039205"
 dependencies = [
  "bitflags",
  "cfg-if",
@@ -274,7 +274,7 @@ dependencies = [
 [[package]]
 name = "openssl-macros"
 version = "0.1.0"
-source = "git+https://github.com/sfackler/rust-openssl#4d392c96da22825f7e15781968df145d8e5fe681"
+source = "git+https://github.com/sfackler/rust-openssl#0f3179b7724d5b8eb33d7a82079305b4f0039205"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -284,7 +284,7 @@ dependencies = [
 [[package]]
 name = "openssl-sys"
 version = "0.9.75"
-source = "git+https://github.com/sfackler/rust-openssl#4d392c96da22825f7e15781968df145d8e5fe681"
+source = "git+https://github.com/sfackler/rust-openssl#0f3179b7724d5b8eb33d7a82079305b4f0039205"
 dependencies = [
  "autocfg",
  "cc",
@@ -345,9 +345,9 @@ dependencies = [
 
 [[package]]
 name = "serde_json"
-version = "1.0.83"
+version = "1.0.85"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "38dd04e3c8279e75b31ef29dbdceebfe5ad89f4d0937213c53f7d49d01b3d5a7"
+checksum = "e55a28e3aaef9d5ce0506d0a14dbba8054ddc7e499ef522dd8b26859ec9d4a44"
 dependencies = [
  "itoa",
  "ryu",
