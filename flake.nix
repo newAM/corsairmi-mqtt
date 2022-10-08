@@ -8,65 +8,74 @@
     flake-utils.url = "github:numtide/flake-utils";
   };
 
-  outputs = { self, nixpkgs, crane, flake-utils }:
+  outputs = {
+    self,
+    nixpkgs,
+    crane,
+    flake-utils,
+  }:
     nixpkgs.lib.recursiveUpdate
-      (flake-utils.lib.eachSystem [ "x86_64-linux" "aarch64-linux" ]
-        (system:
-          let
-            pkgs = nixpkgs.legacyPackages.${system};
-            cargoToml = nixpkgs.lib.importTOML ./Cargo.toml;
-            craneLib = crane.lib.${system};
+    (flake-utils.lib.eachSystem ["x86_64-linux" "aarch64-linux"]
+      (
+        system: let
+          pkgs = nixpkgs.legacyPackages.${system};
+          cargoToml = nixpkgs.lib.importTOML ./Cargo.toml;
+          craneLib = crane.lib.${system};
 
-            commonArgs = {
-              src = ./.;
+          commonArgs = {
+            src = craneLib.cleanCargoSource ./.;
 
-              nativeBuildInputs = with pkgs; [
-                pkg-config
-              ];
+            nativeBuildInputs = with pkgs; [
+              pkg-config
+            ];
 
-              buildInputs = with pkgs; [
-                openssl
-              ];
-            };
+            buildInputs = with pkgs; [
+              openssl
+            ];
+          };
 
-            cargoArtifacts = craneLib.buildDepsOnly commonArgs;
-          in
-          rec {
-            packages.default = craneLib.buildPackage (commonArgs // {
+          cargoArtifacts = craneLib.buildDepsOnly commonArgs;
+
+          nixSrc = nixpkgs.lib.sources.sourceFilesBySuffices ./. [".nix"];
+        in {
+          packages.default = craneLib.buildPackage (nixpkgs.lib.recursiveUpdate
+            commonArgs
+            {
               inherit cargoArtifacts;
             });
 
-            devShells.default = pkgs.mkShellNoCC {
-              nativeBuildInputs = [ pkgs.pkg-config ];
-              buildInputs = [ pkgs.openssl ];
-            };
+          devShells.default = pkgs.mkShellNoCC {
+            inputsFrom = builtins.attrValues self.checks;
+          };
 
-            checks = {
-              pkg = packages.default;
+          checks = {
+            pkg = self.packages.${system}.default;
 
-              clippy = craneLib.cargoClippy (commonArgs // {
+            clippy = craneLib.cargoClippy (nixpkgs.lib.recursiveUpdate
+              commonArgs
+              {
                 inherit cargoArtifacts;
                 cargoClippyExtraArgs = "-- --deny warnings";
               });
 
-              rustfmt = craneLib.cargoFmt { src = ./.; };
+            rustfmt = craneLib.cargoFmt {inherit (commonArgs) src;};
 
-              nixpkgs-fmt = pkgs.runCommand "nixpkgs-fmt" { } ''
-                ${pkgs.nixpkgs-fmt}/bin/nixpkgs-fmt --check ${./.}
-                touch $out
-              '';
+            alejandra = pkgs.runCommand "alejandra" {} ''
+              ${pkgs.alejandra}/bin/alejandra --check ${nixSrc}
+              touch $out
+            '';
 
-              statix = pkgs.runCommand "statix" { } ''
-                ${pkgs.statix}/bin/statix check ${./.}
-                touch $out
-              '';
-            };
-          }
-        ))
-      {
-        overlays.default = final: prev: {
-          corsairmi-mqtt = self.packages.${prev.system}.default;
-        };
-        nixosModules.default = import ./module.nix;
+            statix = pkgs.runCommand "statix" {} ''
+              ${pkgs.statix}/bin/statix check ${nixSrc}
+              touch $out
+            '';
+          };
+        }
+      ))
+    {
+      overlays.default = final: prev: {
+        corsairmi-mqtt = self.packages.${prev.system}.default;
       };
+      nixosModules.default = import ./module.nix;
+    };
 }
