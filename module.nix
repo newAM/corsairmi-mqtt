@@ -97,6 +97,8 @@ in {
           "/dev/hidraw1 rwm"
           "/dev/hidraw2 rwm"
           "/dev/hidraw3 rwm"
+          "/dev/hidraw4 rwm"
+          "/dev/hidraw5 rwm"
         ];
         NoNewPrivileges = true;
         PrivateDevices = true;
@@ -116,6 +118,8 @@ in {
           "/dev/hidraw1"
           "/dev/hidraw2"
           "/dev/hidraw3"
+          "/dev/hidraw4"
+          "/dev/hidraw5"
           "/sys/class/hidraw"
         ];
         MemoryDenyWriteExecute = true;
