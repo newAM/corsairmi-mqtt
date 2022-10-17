@@ -35,8 +35,6 @@
           };
 
           cargoArtifacts = craneLib.buildDepsOnly commonArgs;
-
-          nixSrc = nixpkgs.lib.sources.sourceFilesBySuffices ./. [".nix"];
         in {
           packages.default = craneLib.buildPackage (nixpkgs.lib.recursiveUpdate
             commonArgs
@@ -48,7 +46,9 @@
             inputsFrom = builtins.attrValues self.checks;
           };
 
-          checks = {
+          checks = let
+            nixSrc = nixpkgs.lib.sources.sourceFilesBySuffices ./. [".nix"];
+          in {
             pkg = self.packages.${system}.default;
 
             clippy = craneLib.cargoClippy (nixpkgs.lib.recursiveUpdate

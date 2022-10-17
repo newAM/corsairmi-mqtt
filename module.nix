@@ -21,6 +21,14 @@ in {
       '';
     };
 
+    pid = mkOption {
+      type = types.str;
+      example = "1c06";
+      description = ''
+        USB product ID as a hex string without a leading "0x".
+      '';
+    };
+
     ip = mkOption {
       type = types.str;
       description = ''
@@ -51,7 +59,7 @@ in {
     services.udev.extraRules = ''
       SUBSYSTEM=="hidraw", \
         ATTRS{idVendor}=="1b1c", \
-        ATTRS{idProduct}=="1c06", \
+        ATTRS{idProduct}=="${lib.toLower cfg.pid}", \
         TAG+="systemd", \
         ENV{SYSTEMD_ALIAS}+="/dev/psu", \
         ENV{SYSTEMD_WANTS}+="corsairmi-mqtt.service", \
