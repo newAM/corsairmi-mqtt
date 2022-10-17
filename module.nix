@@ -113,14 +113,14 @@ in {
         ProtectKernelTunables = true;
         ProtectSystem = "strict";
         BindPaths = [
-          "/dev/bus/usb"
-          "/dev/hidraw0"
-          "/dev/hidraw1"
-          "/dev/hidraw2"
-          "/dev/hidraw3"
-          "/dev/hidraw4"
-          "/dev/hidraw5"
-          "/sys/class/hidraw"
+          "-/dev/bus/usb"
+          "-/dev/hidraw0"
+          "-/dev/hidraw1"
+          "-/dev/hidraw2"
+          "-/dev/hidraw3"
+          "-/dev/hidraw4"
+          "-/dev/hidraw5"
+          "-/sys/class/hidraw"
         ];
         MemoryDenyWriteExecute = true;
         LockPersonality = true;
