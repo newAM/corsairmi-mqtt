@@ -220,7 +220,9 @@ fn main() -> anyhow::Result<()> {
         }
     };
 
-    systemd_journal_logger::init().context("Failed to initialize logging")?;
+    systemd_journal_logger::JournalLog::default()
+        .install()
+        .context("Failed to initialize logging")?;
     log::set_max_level(log::LevelFilter::Trace);
 
     ctrlc::set_handler(|| std::process::exit(0)).context("Failed to set SIGINT handler")?;
