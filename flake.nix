@@ -6,10 +6,14 @@
     crane.url = "github:ipetkov/crane";
     crane.inputs.nixpkgs.follows = "nixpkgs";
     crane.inputs.flake-utils.follows = "flake-utils";
+
+    advisory-db.url = "github:rustsec/advisory-db";
+    advisory-db.flake = false;
   };
 
   outputs = {
     self,
+    advisory-db,
     nixpkgs,
     crane,
     flake-utils,
@@ -19,7 +23,6 @@
       (
         system: let
           pkgs = nixpkgs.legacyPackages.${system};
-          cargoToml = nixpkgs.lib.importTOML ./Cargo.toml;
           craneLib = crane.lib.${system};
 
           commonArgs = {
@@ -50,6 +53,11 @@
             nixSrc = nixpkgs.lib.sources.sourceFilesBySuffices ./. [".nix"];
           in {
             pkg = self.packages.${system}.default;
+
+            audit = craneLib.cargoAudit {
+              inherit (commonArgs) src;
+              inherit advisory-db;
+            };
 
             clippy = craneLib.cargoClippy (nixpkgs.lib.recursiveUpdate
               commonArgs
