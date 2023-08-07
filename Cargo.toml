@@ -12,7 +12,7 @@ corsairmi = "2"
 ctrlc = "3"
 hex = "0.4"
 log = { version = "0.4", features = ["release_max_level_info"] }
-openssl = "0.10.42"
+openssl = "0.10.56"
 serde = { version = "1.0.138", features = ["derive"] }
 serde_json = "1.0.82"
 systemd-journal-logger = "1"
