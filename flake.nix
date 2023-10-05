@@ -35,6 +35,8 @@
             buildInputs = with pkgs; [
               openssl
             ];
+
+            strictDeps = true;
           };
 
           cargoArtifacts = craneLib.buildDepsOnly commonArgs;
