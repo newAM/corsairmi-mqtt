@@ -5,7 +5,6 @@
 
     crane.url = "github:ipetkov/crane";
     crane.inputs.nixpkgs.follows = "nixpkgs";
-    crane.inputs.flake-utils.follows = "flake-utils";
 
     advisory-db.url = "github:rustsec/advisory-db";
     advisory-db.flake = false;
